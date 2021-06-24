@@ -20,9 +20,19 @@ namespace S1SYPHOS;
 class DejureOnline
 {
     /**
+     * Constants
+     */
+
+    /**
      * Current version of php-dejure
      */
-    const VERSION = '1.0.0';
+    const VERSION = '1.2.0';
+
+    /**
+     * Current API version
+     */
+
+    const DJO_VERSION = '2.22';
 
 
     /**
@@ -30,25 +40,52 @@ class DejureOnline
      */
 
     /**
-     * Path to caching directory
+     * Cache driver
      *
-     * @var string
+     * @var \Psr\SimpleCache\CacheInterface
      */
-    public $cacheDir = ' ./tmp/';
+    protected $cache;
 
     /**
-     * Name of provider designation
+     * Determines whether output was fetched from cache
      *
-     * @var string
+     * @var bool
      */
-    public $provider = '';
+    public $fromCache = false;
 
     /**
-     * Contact mail address
+     * Holds tokens of all possible cache drivers
+     *
+     * See https://github.com/terrylinooo/simple-cache
+     *
+     * @var array
+     */
+    protected $cacheDrivers = [
+        'file',
+        'redis',
+        'mongo',
+        'mysql',
+        'sqlite',
+        'apc',
+        'apcu',
+        'memcache',
+        'memcached',
+        'wincache',
+    ];
+
+    /**
+     * Defines provider designation
      *
      * @var string
      */
-    public $mail = '';
+    protected $provider = '';
+
+    /**
+     * Defines contact email address
+     *
+     * @var string
+     */
+    protected $email = '';
 
     /**
      * Determines whether citation should be linked completely or rather partially
@@ -56,65 +93,82 @@ class DejureOnline
      *
      * @var string
      */
-    public $linkStyle = 'weit';
+    protected $linkStyle = 'weit';
 
     /**
      * Controls `target` attribute
      *
      * @var string
      */
-    public $target = '';
+    protected $target = '';
 
     /**
      * Controls `class` attribute
      *
      * @var string
      */
-    public $class = '';
+    protected $class = '';
 
     /**
      * Enables linking to 'buzer.de' if legal norm not available on dejure.org
      *
      * @var bool
      */
-    public $buzer = true;
+    protected $buzer = true;
 
     /**
-     * Cache period (in days)
+     * Defines cache duration (in days)
      *
      * @var int
      */
-    public $cachePeriod = 2;
+    protected $cacheDuration = 2;
 
     /**
-     * Timeout period for API requests (in seconds)
+     * Defines timeout for API requests (in seconds)
      *
      * @var int
      */
-    public $timeout = 3;
+    protected $timeout = 3;
 
 
     /*
      * Constructor
      */
 
-    public function __construct(string $cacheDir = null)
-    {
-        # Define current API version
-        define('DJO_VERSION', '2.22');
-
-        # Determine path to caching path
-        if (isset($cacheDir)) {
-            $this->cacheDir = $cacheDir;
-        }
-
-        # Determine provider designation & webmaster mail
+    public function __construct(string $cacheDir = './.cache', string $cacheDriver = 'file', array $cacheConfig = null) {
+        # Provide sensible defaults, like ..
         if (isset($_SERVER['HTTP_HOST'])) {
+            # (1) .. current domain for provider designation
             $this->domain = $_SERVER['HTTP_HOST'];
 
-            if (empty($this->mail)) {
-                $this->mail = 'webmaster@' . $this->domain;
+            # (2) .. 'webmaster' @ current domain for contact email
+            if (empty($this->email)) {
+                $this->email = 'webmaster@' . $this->domain;
             }
+        }
+
+        # Initialize cache
+        # (1) Create  path to caching directory (if not existent)
+        $this->createDir($cacheDir);
+
+        # (2) Determine caching options
+        $cacheConfig = $cacheConfig ?? [
+            'storage' => $cacheDir,
+            'gc_enable' => true,
+        ];
+
+        # (3) Check provided cache driver
+        if (in_array($cacheDriver, $this->cacheDrivers) === false) {
+            throw new \Exception(sprintf('Cache driver "%s" cannot be initiated', $cacheDriver));
+        }
+
+        # (4) Initialize new cache object
+        $this->cache = new \Shieldon\SimpleCache\Cache($cacheDriver, $cacheConfig);
+
+        # (5) Build database when using SQLite for the first time
+        # TODO: Add check for MySQL, see https://github.com/terrylinooo/simple-cache/issues/8
+        if ($cacheDriver == 'sqlite' && !file_exists(join([$cacheDir, 'cache.sqlite3']))) {
+            $this->cache->rebuild();
         }
     }
 
@@ -122,16 +176,6 @@ class DejureOnline
     /**
      * Setters & getters
      */
-
-    public function setCacheDir(string $cacheDir): void
-    {
-        $this->cacheDir = $cacheDir;
-    }
-
-    public function getCacheDir(): string
-    {
-        return $this->cacheDir;
-    }
 
     public function setProvider(string $provider): void
     {
@@ -145,19 +189,17 @@ class DejureOnline
 
     public function setMail(string $mail): void
     {
-        $this->mail = $mail;
+        $this->email = $mail;
     }
 
     public function getMail(): string
     {
-        return $this->mail;
+        return $this->email;
     }
 
     public function setLinkStyle(string $linkStyle): void
     {
-        if (in_array($linkStyle, ['weit', 'schmal'])) {
-            $this->linkStyle = $linkStyle;
-        }
+        $this->linkStyle = $linkStyle;
     }
 
     public function getLinkStyle(): string
@@ -195,14 +237,14 @@ class DejureOnline
         return $this->buzer;
     }
 
-    public function setCachePeriod(int $cachePeriod): void
+    public function setCacheDuration(int $cacheDuration): void
     {
-        $this->cachePeriod = $cachePeriod;
+        $this->cacheDuration = $cacheDuration;
     }
 
-    public function getCachePeriod(): string
+    public function getCacheDuration(): string
     {
-        return $this->cachePeriod;
+        return $this->cacheDuration;
     }
 
     public function setTimeout(int $timeout): void
@@ -221,296 +263,222 @@ class DejureOnline
      */
 
     /**
-     * dejurify()
+     * Processes linkable citations & caches text (if uncached or expired)
      *
-     * Wrapper for `djo_ausgabepuffer`
+     * @param string $text Original (unprocessed) text
+     * @return string Processed text if successful, otherwise unprocessed text
      */
-    public function dejurify(string $string = '')
+    public function dejurify(string $text = ''): string
     {
-        return $this->djo_ausgabepuffer($string);
+        # Return text as-is if no linkable citations are found
+        if (!preg_match("/§|&sect;|Art\.|\/[0-9][0-9](?![0-9\/])| [0-9][0-9]?[\/\.][0-9][0-9](?![0-9\.])|[0-9][0-9], /", $text)) {
+            return $text;
+        }
+
+        # Remove whitespaces from both ends of the string
+        $text = trim($text);
+
+        # Check if text was processed & cached before ..
+        $result = false;
+
+        # Build unique caching key
+        $hash = $this->text2hash($text);
+
+        # If cache file exists & its content is valid (= not expired) ..
+        if ($this->cache->has($hash) === true) {
+            # (1) .. report back
+            $this->fromCache = true;
+
+            # (2) .. load processed text from cache
+            return $this->cache->get($hash);
+        }
+
+        # .. otherwise, process text & cache it
+        return $this->connect($text);
     }
 
 
     /**
-     * djo_ausgabepuffer
+     * Processes text by connecting to API:
+     * (1) Sends unprocessed text
+     * (2) Receives processed text
+     * (3) Checks data integrity
+     * (4) Stores result in cache
      *
-     * Hauptfunktion. Initiiert Vernetzung.
-     * Prueft vorher auf zu vernetzende Inhalte.
-     * Bricht ab wenn nichts zu tun ist.
-     * @return String mit dem vernetzten/unvernetzten Text.
+     * @param string $text Original (unprocessed) text
+     * @return string Processed text if successful, otherwise unprocessed text
      */
-    public function djo_ausgabepuffer($ausgabetext = '') {
-        # zu vernetzende Inhalte im Text? Ansonsten Originaltext zurueck
-        if (!preg_match("/§|&sect;|Art\.|\/[0-9][0-9](?![0-9\/])| [0-9][0-9]?[\/\.][0-9][0-9](?![0-9\.])|[0-9][0-9], /", $ausgabetext)) {
-            return $ausgabetext;
-        }
+    protected function connect(string $text): string
+    {
+        # Normalize input
+        # (1) Link style only supports two possible options
+        $linkStyle = in_array($this->linkStyle, ['weit', 'schmal']) === true
+            ? $this->linkStyle
+            : 'weit'
+        ;
 
-        $arr_parameter = [
-            'Anbieterkennung'       => $this->provider . '__' . $this->mail,
-            'format'                => $this->linkStyle,
-            'target'                => $this->target,
-            'class'                 => $this->class,
-            'buzer'                 => (int)$this->buzer,
-            'zeitlimit_in_sekunden' => $this->timeout,
-            'version'               => 'php-' . DJO_VERSION,
-            'Schema'                => 'https',
+        # (2) Whether linking unknown legal norms to `buzer.de` or not needs to be an integer
+        $buzer = (int)$this->buzer;
+
+        # Note: Changing parameters requires manual cache reset!
+        $parameters = [
+            'Anbieterkennung' => $this->provider . '__' . $this->email,
+            'format'          => $linkStyle,
+            'target'          => $this->target,
+            'class'           => $this->class,
+            'buzer'           => $buzer,
+            'version'         => 'php-' . self::DJO_VERSION,
+            'Schema'          => 'https',
         ];
 
-        # Abfragen des Cache, ob der Text schon gespeichert ist
-        $rueckgabe = $this->vernetzen_ueber_cache($ausgabetext);
+        # Build URL-encoded request string ..
+        # (1) .. from unprocessed text
+        $request = 'Originaltext=' . urlencode($text);
 
-        if (empty($rueckgabe)) {
-            # Kein Cache, Anfrage an dejure.org senden
-            $rueckgabe = $this->vernetzen_ueber_dejure_org($ausgabetext, $arr_parameter);
+        # (2) .. required parameters
+        foreach ($parameters as $key => $value) {
+            $request .= '&' . urlencode($key) . '=' . urlencode($value);
         }
 
-        # Einmal zwischen 0 und 6 Uhr alle Dateien im Cacheverzeichnis loeschen,
-        # die aelter als X Tage sind. Dies loest regelmaessig eine aktualisierende
-        # Neuvernetzung aus
-        if (date('G') < 6) {
-            $this->cache_dateien_loeschen();
-        }
-
-        return $rueckgabe;
-    }
-
-
-    /**
-     * vernetzen_ueber_cache
-     *
-     * Holt eventuell vorhandenen vernetzten Text aus dem Cache.
-     * @return String mit vernetzten Text oder Bool false
-     */
-    private function vernetzen_ueber_cache($ausgangstext) {
-        # Cache-Verzeichnis und Cache-Dauer definiert?
-        if (isset($this->cacheDir) && isset($this->cachePeriod)) {
-            $vernetzungscache = $this->cacheDir;
-            $cache_dauer = $this->cachePeriod;
-        }
-
-        if (empty($vernetzungscache) || !is_dir($vernetzungscache) || !is_numeric($cache_dauer)) {
-            return false;
-        }
-
-        $ausgangstext = trim($ausgangstext);
-
-        # Cache Vorhaltedauer in Sekunden wandeln
-        $cache_dauer = $cache_dauer * 24 * 60 * 60;
-        $schluessel = strlen($ausgangstext) . md5($ausgangstext);
-
-        if (file_exists($vernetzungscache . $schluessel)) {
-            # Datei aelter als Cache-Dauer? Neu vernetzen
-            if (filemtime($vernetzungscache . $schluessel) < time() - $cache_dauer) {
-                return false;
-            }
-
-            # Cache-Datei auslesen und zurueck geben
-            return file_get_contents($vernetzungscache . $schluessel);
-        }
-
-        # Kein Cache vorhanden. Neu vernetzen
-        return false;
-    }
-
-
-    /**
-     * ablegen_in_cache
-     *
-     * Legt vernetzten Text im Cache ab.
-     * @return none
-     */
-    private function ablegen_in_cache($ausgangstext, $rueckgabe) {
-        if (isset($this->cacheDir)) {
-            $vernetzungscache = $this->cacheDir;
-        }
-
-        if (!empty($vernetzungscache) && is_dir($vernetzungscache)) {
-            $schluessel = strlen($ausgangstext).md5($ausgangstext);
-            $d = fopen($vernetzungscache . $schluessel, "w");
-
-            if ($d !== false) {
-                fwrite($d, $rueckgabe);
-                fclose($d);
-            }
-        }
-    }
-
-
-    /**
-     * cache_dateien_loeschen
-     *
-     * Entfernt veraltete Cache-Dateien
-     * @return Array der geloeschten Dateien fuer Debug-Zwecke
-     */
-    public function cache_dateien_loeschen() {
-        if (isset($this->cacheDir) && isset($this->cachePeriod)) {
-            $vernetzungscache = $this->cacheDir;
-            $cache_dauer = $this->cachePeriod;
-        }
-
-        if (empty($vernetzungscache) || !is_dir($vernetzungscache) || !is_numeric($cache_dauer)) {
-            return false;
-        }
-
-        # Cache Vorhaltedauer in Sekunden wandeln
-        $cache_dauer = $cache_dauer * 24 * 60 * 60;
-
-        # Zeitpunkt des letzten Loeschens abfragen
-        if (!file_exists($vernetzungscache . 'cache_status')) {
-            $this->cache_status_datei();
-
-            return;
-        }
-
-        $cache_status = file_get_contents($vernetzungscache . 'cache_status');
-
-        if (time() - $cache_status > 24 * 60 * 60) { # 86400 -- Wenn letztes Loeschen 24h zurueck liegt
-            $dateien = scandir($vernetzungscache);
-            $geloescht = [];
-
-            if (!empty($dateien[0])) {
-                foreach ($dateien as $datei) {
-                    if (!in_array($datei, [". ", ".. ", "vernetzungsfunction.inc.php"])) {
-                        $file_time = filemtime($vernetzungscache . $datei);
-
-                        # Datei aelter als Vorhaltedauer Stunden, dann loeschen
-                        if ($file_time < (time() - $cache_dauer)) {
-                            unlink($vernetzungscache . $datei);
-                            $geloescht[] = $vernetzungscache . $datei;
-                        }
-                    }
-                }
-            }
-
-            # Status-Datei neu erzeugen
-            $this->cache_status_datei($verzeichnis);
-
-            return $geloescht;
-        }
-    }
-
-
-    /**
-     * cache_status_datei
-     *
-     * Legt eine Datei mit dem letzten Zeitpunkt der Cache-Saeuberung an
-     * @return none
-     */
-    private function cache_status_datei() {
-        $cache_zeitstempel = mktime(0, 0, 0, date('d'), date('m'), date('Y'));
-        $file_handle = fopen($this->cacheDir . 'cache_status', 'w');
-
-        fputs($file_handle, $cache_zeitstempel);
-        fclose($file_handle);
-    }
-
-
-    /**
-     * integritaetskontrolle_und_cache
-     *
-     * Prueft, ob der von der Vernetzung zurueck gegebene Text mit entfernten
-     * dejure.org Links dem Originaltext gleicht. Unterscheiden sich wenn es
-     * einen Fehler bei der Vernetzung gab.
-     * @return String mit dem Originaltext
-     */
-    private function integritaetskontrolle_und_cache($ausgangstext, $neuertext) {
-        # pruefen, ob zurueckgegebener, vernetzter Text bis auf die hinzugefuegten Links dem Original gleicht
-        $neuertext    = trim($neuertext);
-        $ausgangstext = trim($ausgangstext);
-
-        if (preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $ausgangstext) == preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $neuertext)) {
-            # Alles in Ordnung. Vernetzten Text im Cache speichern und zurueck geben
-            $this->ablegen_in_cache($ausgangstext, $neuertext);
-
-            return $neuertext;
-
-        } else {
-            # Texte unterschiedlich. Originaltext zurueck geben
-            return $ausgangstext;
-        }
-    }
-
-
-    /**
-     * vernetzen_ueber_dejure_org
-     *
-     * Sendet den Originaltext an dejure.org und erhaelt den vernetzten Text.
-     * Erste Pruefung, ob Vernetzung fehlerfrei ablief.
-     * @return String Vernetzter Text bei Erfolg. Ansonsten Originaltext.
-     */
-    private function vernetzen_ueber_dejure_org($ausgangstext, $parameter = []) {
-        # Moegliche Parameter: Anbieterkennung / Dokumentkennung / target / class / linkstil / zeitlimit_in_sekunden
-        # Hinweis: Bei Aenderung dieser Einstellungen muss der Cache manuell geloescht werden
-        $ausgangstext = trim($ausgangstext);
-        $uebergabe = 'Originaltext=' . urlencode($ausgangstext);
-
-        foreach ($parameter as $option => $wert) {
-            if ($option == 'zeitlimit_in_sekunden') {
-                $zeitlimit_in_sekunden = $wert;
-
-            } else {
-                $uebergabe .= '&' .urlencode($option) . '=' .urlencode($wert);
-            }
-        }
-
-        if (empty($zeitlimit_in_sekunden) || !is_numeric($zeitlimit_in_sekunden)) {
-            $zeitlimit_in_sekunden = 3;
-        }
-
+        # (3) .. and prepare request header
         $header = 'POST /dienste/vernetzung/vernetzen HTTP/1.0' . "\r\n";
-        $header .= 'User-Agent: ' . $this->provider. ' (PHP-Vernetzung ' . DJO_VERSION. ')' . "\r\n";
+        $header .= 'User-Agent: ' . $this->provider . ' (PHP-Vernetzung ' . self::DJO_VERSION. ')' . "\r\n";
         $header .= 'Content-type: application/x-www-form-urlencoded' . "\r\n";
-        $header .= 'Content-length: ' .strlen($uebergabe). "\r\n";
+        $header .= 'Content-length: ' . strlen($request) . "\r\n";
         $header .= 'Host: rechtsnetz.dejure.org' . "\r\n";
         $header .= 'Connection: close' . "\r\n";
         $header .= "\r\n";
 
+        # Connect to API ..
+        # (1) .. over encrypted connection
         if (extension_loaded('openssl')) {
-            $fp = fsockopen('tls://rechtsnetz.dejure.org', 443, $errno, $errstr, $zeitlimit_in_sekunden);
+            $handle = fsockopen('tls://rechtsnetz.dejure.org', 443, $errorCode, $errorMessage, $this->timeout);
         }
 
-        if (!$fp) {
-            $fp = fsockopen('rechtsnetz.dejure.org', 80, $errno, $errstr, $zeitlimit_in_sekunden);
+        # (2) .. alternatively, over unencrypted connection
+        if ($handle === false) {
+            $handle = fsockopen('rechtsnetz.dejure.org', 80, $errorCode, $errorMessage, $this->timeout);
         }
 
-        if (!$fp) { # Verbindung gescheitert. Originaltext zurueck geben
-            return $ausgangstext;
+        # Return unprocessed text if connection ultimately fails ..
+        if ($handle === false) {
+            return $text;
+        }
 
-        } else {
-            stream_set_timeout($fp, $zeitlimit_in_sekunden, 0); # Verbindung nach $zeitlimit_in_sekunden Sekunden abbrechen
-            stream_set_blocking($fp, true);
-            fputs($fp, $header . $uebergabe);
+        # .. otherwise, send text for processing (until reaching timeout)
+        stream_set_timeout($handle, $this->timeout, 0);
+        stream_set_blocking($handle, true);
+        fputs($handle, $header . $request);
 
-            $timeOutSock = false;
-            $eofSock = false;
-            $rueckgabe = '';
+        $socketTimeout = false;
+        $socketEOF = false;
+        $response = '';
 
-            while (!$eofSock && !$timeOutSock) {
-                $rueckgabe .= fgets($fp, 1024); #
-                $stSock = stream_get_meta_data($fp);
-                $eofSock = $stSock['eof'];
-                $timeOutSock = $stSock['timed_out'];
+        while (!$socketEOF && !$socketTimeout) {
+            $response .= fgets($handle, 1024);
+            $socketStatus = stream_get_meta_data($handle);
+            $socketEOF = $socketStatus['eof'];
+            $socketTimeout = $socketStatus['timed_out'];
+        }
+
+        fclose($handle);
+
+        # Handle problems with data transmission, returning unprocessed text if ..
+        # (1) .. timeout is reached or connection broke down
+        if (!preg_match("/^(.*?)\r?\n\r?\n\r?\n?(.*)/s", $response, $matches)) {
+            return $text;
+        }
+
+        # (2) .. status code indicates something other than successful transfer
+        if (strpos($matches[1], '200 OK') === false) {
+            return $text;
+        }
+
+        # (3) .. otherwise, transmission *may* have worked
+        $response = $matches[2];
+
+        # Check if processed text is shorter than unprocessed one, which indicates corrupted data
+        if (strlen($response) < strlen($text)) {
+            return $text;
+        }
+
+        # Verify data integrity by comparing original & modified text
+        # (1) Remove whitespaces from both ends of the string
+        $result = trim($response);
+
+        # (2) Check if processed text (minus `dejure.org` links) matches original (unprocessed) text ..
+        if (preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $text) == preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $result)) {
+            # Build unique caching key & store result in cache
+            $this->cache->set($this->text2hash($text), $result, $this->days2seconds($this->cacheDuration));
+
+            return $result;
+        }
+
+        # .. otherwise, return original (unprocessed) text
+        return $text;
+    }
+
+
+    /**
+     * Helpers
+     */
+
+    /**
+     * Converts days to seconds
+     *
+     * @param int $days
+     * @return int
+     */
+    protected function days2seconds(int $days): int
+    {
+        return $days * 24 * 60 * 60;
+    }
+
+
+    /**
+     * Builds hash from text length & content
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function text2hash(string $text): string
+    {
+        return strlen($text) . md5($text);
+    }
+
+
+    /**
+     * Creates a new directory
+     *
+     * Source: Kirby v3 - Bastian Allgeier
+     * See https://getkirby.com/docs/reference/objects/toolkit/dir/make
+     *
+     * @param string $dir The path for the new directory
+     * @param bool $recursive Create all parent directories, which don't exist
+     * @return bool True: the dir has been created, false: creating failed
+     */
+    protected function createDir(string $dir, bool $recursive = true): bool
+    {
+        if (empty($dir) === true) {
+            return false;
+        }
+
+        if (is_dir($dir) === true) {
+            return true;
+        }
+
+        $parent = dirname($dir);
+
+        if ($recursive === true) {
+            if (is_dir($parent) === false) {
+                $this->createDir($parent, true);
             }
-
-            fclose($fp);
-
-            if (!preg_match("/^(.*?)\r?\n\r?\n\r?\n?(.*)/s",$rueckgabe, $rueckgabeARR)) {
-                return $ausgangstext; # Zeitueberschreitung oder Verbindungsproblem
-
-            } else if (strpos($rueckgabeARR[1], '200 OK') === false) {
-                return $ausgangstext; # sonstiges Serverproblem
-
-            } else {
-                $rueckgabe = $rueckgabeARR[2];
-
-                # Vernetzter Text kleiner als Ausgangstext. Eventuell Fehler bei Uebertragung
-                if (strlen($rueckgabe) < strlen($ausgangstext)) {
-                    return $ausgangstext;
-                }
-
-                # Vernetzung erfolgreich. Rueckgabe auf Fehler pruefen
-                return $this->integritaetskontrolle_und_cache($ausgangstext, $rueckgabe);
-            }
         }
+
+        if (is_writable($parent) === false) {
+            throw new Exception(sprintf('The directory "%s" cannot be created', $dir));
+        }
+
+        return mkdir($dir);
     }
 }
