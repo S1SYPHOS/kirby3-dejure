@@ -6,7 +6,7 @@
  * @package   Kirby CMS
  * @author    S1SYPHOS <hello@twobrain.io>
  * @link      http://twobrain.io
- * @version   1.0.0
+ * @version   1.1.0
  * @license   MIT
  */
 
