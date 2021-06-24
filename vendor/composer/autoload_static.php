@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f
+class ComposerStaticInit611e04ed773a37ce92d91966d7ce00ae
 {
     public static $files = array (
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
@@ -12,8 +12,8 @@ class ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '0d59ee240a4cd96ddbb4ff164fccea4d' => __DIR__ . '/..' . '/symfony/polyfill-php73/bootstrap.php',
-        'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
+        'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         'b6b991a57620e2fb6b2f66f03fe9ddc2' => __DIR__ . '/..' . '/symfony/string/Resources/functions.php',
         '25072dd6e2470089de65ae7bf11d3109' => __DIR__ . '/..' . '/symfony/polyfill-php72/bootstrap.php',
     );
@@ -38,10 +38,12 @@ class ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f
             'Symfony\\Component\\Filesystem\\' => 29,
             'Symfony\\Component\\EventDispatcher\\' => 34,
             'Symfony\\Component\\Console\\' => 26,
+            'Shieldon\\SimpleCache\\' => 21,
             'S1SYPHOS\\' => 9,
         ),
         'P' => 
         array (
+            'Psr\\SimpleCache\\' => 16,
             'Psr\\Log\\' => 8,
             'Psr\\EventDispatcher\\' => 20,
             'Psr\\Container\\' => 14,
@@ -133,9 +135,17 @@ class ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f
         array (
             0 => __DIR__ . '/..' . '/symfony/console',
         ),
+        'Shieldon\\SimpleCache\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache',
+        ),
         'S1SYPHOS\\' => 
         array (
             0 => __DIR__ . '/..' . '/s1syphos/php-dejure/lib',
+        ),
+        'Psr\\SimpleCache\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/simple-cache/src',
         ),
         'Psr\\Log\\' => 
         array (
@@ -782,7 +792,28 @@ class ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f
         'Psr\\Log\\Test\\DummyTest' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/DummyTest.php',
         'Psr\\Log\\Test\\LoggerInterfaceTest' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/LoggerInterfaceTest.php',
         'Psr\\Log\\Test\\TestLogger' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/TestLogger.php',
+        'Psr\\SimpleCache\\CacheException' => __DIR__ . '/..' . '/psr/simple-cache/src/CacheException.php',
+        'Psr\\SimpleCache\\CacheInterface' => __DIR__ . '/..' . '/psr/simple-cache/src/CacheInterface.php',
+        'Psr\\SimpleCache\\InvalidArgumentException' => __DIR__ . '/..' . '/psr/simple-cache/src/InvalidArgumentException.php',
         'S1SYPHOS\\DejureOnline' => __DIR__ . '/..' . '/s1syphos/php-dejure/lib/DejureOnline.php',
+        'Shieldon\\SimpleCache\\AssertTrait' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/AssertTrait.php',
+        'Shieldon\\SimpleCache\\Cache' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Cache.php',
+        'Shieldon\\SimpleCache\\CacheProvider' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/CacheProvider.php',
+        'Shieldon\\SimpleCache\\CacheWarmingTrait' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/CacheWarmingTrait.php',
+        'Shieldon\\SimpleCache\\Driver\\Apc' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Apc.php',
+        'Shieldon\\SimpleCache\\Driver\\Apcu' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Apcu.php',
+        'Shieldon\\SimpleCache\\Driver\\File' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/File.php',
+        'Shieldon\\SimpleCache\\Driver\\Memcache' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Memcache.php',
+        'Shieldon\\SimpleCache\\Driver\\Memcached' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Memcached.php',
+        'Shieldon\\SimpleCache\\Driver\\Mock' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Mock.php',
+        'Shieldon\\SimpleCache\\Driver\\Mongo' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Mongo.php',
+        'Shieldon\\SimpleCache\\Driver\\Mysql' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Mysql.php',
+        'Shieldon\\SimpleCache\\Driver\\Redis' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Redis.php',
+        'Shieldon\\SimpleCache\\Driver\\SqlTrait' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/SqlTrait.php',
+        'Shieldon\\SimpleCache\\Driver\\Sqlite' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Sqlite.php',
+        'Shieldon\\SimpleCache\\Driver\\Wincache' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Driver/Wincache.php',
+        'Shieldon\\SimpleCache\\Exception\\CacheArgumentException' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Exception/CacheArgumentException.php',
+        'Shieldon\\SimpleCache\\Exception\\CacheException' => __DIR__ . '/..' . '/shieldon/simple-cache/src/SimpleCache/Exception/CacheException.php',
         'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
         'Symfony\\Component\\Console\\Application' => __DIR__ . '/..' . '/symfony/console/Application.php',
         'Symfony\\Component\\Console\\Attribute\\AsCommand' => __DIR__ . '/..' . '/symfony/console/Attribute/AsCommand.php',
@@ -990,9 +1021,9 @@ class ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit5e02f321f620f3f86b8a94a12feb368f::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit611e04ed773a37ce92d91966d7ce00ae::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit611e04ed773a37ce92d91966d7ce00ae::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit611e04ed773a37ce92d91966d7ce00ae::$classMap;
 
         }, null, ClassLoader::class);
     }

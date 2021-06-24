@@ -1,8 +1,8 @@
 <?php return array (
   'root' => 
   array (
-    'pretty_version' => '1.0.0+no-version-set',
-    'version' => '1.0.0.0',
+    'pretty_version' => '1.1.0',
+    'version' => '1.1.0.0',
     'aliases' => 
     array (
     ),
@@ -124,10 +124,19 @@
         0 => '1.0',
       ),
     ),
+    'psr/simple-cache' => 
+    array (
+      'pretty_version' => '1.0.1',
+      'version' => '1.0.1.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '408d5eafb83c57f6365a3ca330ff23aa4a5fa39b',
+    ),
     's1syphos/kirby3-dejure' => 
     array (
-      'pretty_version' => '1.0.0+no-version-set',
-      'version' => '1.0.0.0',
+      'pretty_version' => '1.1.0',
+      'version' => '1.1.0.0',
       'aliases' => 
       array (
       ),
@@ -135,12 +144,21 @@
     ),
     's1syphos/php-dejure' => 
     array (
-      'pretty_version' => '1.0.0',
-      'version' => '1.0.0.0',
+      'pretty_version' => '1.2.0',
+      'version' => '1.2.0.0',
       'aliases' => 
       array (
       ),
-      'reference' => '0b1b6fb8e4333634cd5a222354ad35d5d6333d7c',
+      'reference' => '60e57083f21a9da99026a972f8088e21b8908703',
+    ),
+    'shieldon/simple-cache' => 
+    array (
+      'pretty_version' => '1.3.1',
+      'version' => '1.3.1.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '15fd0e871185775782a80bc1680044e3e27a85c8',
     ),
     'symfony/console' => 
     array (
