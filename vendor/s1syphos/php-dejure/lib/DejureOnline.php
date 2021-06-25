@@ -20,38 +20,123 @@ namespace S1SYPHOS;
 class DejureOnline
 {
     /**
-     * Constants
+     * Current version
      */
-
-    /**
-     * Current version of php-dejure
-     */
-    const VERSION = '1.2.0';
-
-    /**
-     * Current API version
-     */
-
-    const DJO_VERSION = '2.22';
+    const VERSION = '1.3.1';
 
 
     /**
-     * Properties
+     * General information
      */
 
     /**
-     * Cache driver
+     * Defines provider domain
      *
-     * @var \Psr\SimpleCache\CacheInterface
+     * @var string
      */
-    protected $cache;
+    protected $domain = '';
+
 
     /**
-     * Determines whether output was fetched from cache
+     * Defines contact email address
+     *
+     * @var string
+     */
+    protected $email = '';
+
+
+    /**
+     * Text processing
+     */
+
+    /**
+     * Enables linking to 'buzer.de' if legal norm not available on dejure.org
      *
      * @var bool
      */
-    public $fromCache = false;
+    protected $buzer = true;
+
+
+    /**
+     * Controls `class` attribute
+     *
+     * @var string
+     */
+    protected $class = '';
+
+
+    /**
+     * Determines whether citation should be linked completely or rather partially
+     *
+     * Possible values:
+     * 'ohne' | 'mit' | 'auto'
+     *
+     * @var string
+     */
+    protected $lineBreak = 'auto';
+
+
+    /**
+     * Determines whether citation should be linked completely or rather partially
+     *
+     * Possible values:
+     * 'weit' | 'schmal'
+     *
+     * @var string
+     */
+    protected $linkStyle = 'weit';
+
+
+    /**
+     * Controls `target` attribute
+     *
+     * @var string
+     */
+    protected $target = '';
+
+
+    /**
+     * Controls `title` attribute
+     *
+     * Possible values:
+     * 'ohne' | 'neutral' | 'Gesetze' | 'halb'
+     *
+     * @var string
+     */
+    protected $tooltip = 'neutral';
+
+
+    /**
+     * Connection
+     */
+
+    /**
+     * Defines timeout for API response streams (in seconds)
+     *
+     * @var int
+     */
+    protected $streamTimeout = 10;
+
+
+    /**
+     * Defines timeout for API requests (in seconds)
+     *
+     * @var int
+     */
+    protected $timeout = 3;
+
+
+    /**
+     * Controls `user agent` header
+     *
+     * @var string
+     */
+    protected $userAgent = null;
+
+
+    /**
+     * Caching
+     */
 
     /**
      * Holds tokens of all possible cache drivers
@@ -73,48 +158,14 @@ class DejureOnline
         'wincache',
     ];
 
-    /**
-     * Defines provider designation
-     *
-     * @var string
-     */
-    protected $provider = '';
 
     /**
-     * Defines contact email address
+     * Cache driver
      *
-     * @var string
+     * @var \Psr\SimpleCache\CacheInterface
      */
-    protected $email = '';
+    protected $cache;
 
-    /**
-     * Determines whether citation should be linked completely or rather partially
-     * Possible values: 'weit' | 'schmal'
-     *
-     * @var string
-     */
-    protected $linkStyle = 'weit';
-
-    /**
-     * Controls `target` attribute
-     *
-     * @var string
-     */
-    protected $target = '';
-
-    /**
-     * Controls `class` attribute
-     *
-     * @var string
-     */
-    protected $class = '';
-
-    /**
-     * Enables linking to 'buzer.de' if legal norm not available on dejure.org
-     *
-     * @var bool
-     */
-    protected $buzer = true;
 
     /**
      * Defines cache duration (in days)
@@ -123,49 +174,48 @@ class DejureOnline
      */
     protected $cacheDuration = 2;
 
+
     /**
-     * Defines timeout for API requests (in seconds)
+     * Determines whether output was fetched from cache
      *
-     * @var int
+     * @var bool
      */
-    protected $timeout = 3;
+    public $fromCache = false;
 
 
-    /*
+    /**
      * Constructor
+     *
+     * @param string $cacheDriver
+     * @param array $cacheSettings
+     * @return void
      */
-
-    public function __construct(string $cacheDir = './.cache', string $cacheDriver = 'file', array $cacheConfig = null) {
+    public function __construct(string $cacheDriver = 'file', array $cacheSettings = []) {
         # Provide sensible defaults, like ..
-        if (isset($_SERVER['HTTP_HOST'])) {
-            # (1) .. current domain for provider designation
-            $this->domain = $_SERVER['HTTP_HOST'];
+        # (1) .. current domain
+        $this->domain = $_SERVER['HTTP_HOST'];
 
-            # (2) .. 'webmaster' @ current domain for contact email
-            if (empty($this->email)) {
-                $this->email = 'webmaster@' . $this->domain;
-            }
-        }
+        # (2) .. contact email
+        $this->email = 'webmaster@' . $_SERVER['HTTP_HOST'];
 
         # Initialize cache
-        # (1) Create  path to caching directory (if not existent)
-        $this->createDir($cacheDir);
-
-        # (2) Determine caching options
-        $cacheConfig = $cacheConfig ?? [
-            'storage' => $cacheDir,
-            'gc_enable' => true,
-        ];
-
-        # (3) Check provided cache driver
+        # (1) Validate provided cache driver
         if (in_array($cacheDriver, $this->cacheDrivers) === false) {
             throw new \Exception(sprintf('Cache driver "%s" cannot be initiated', $cacheDriver));
         }
 
-        # (4) Initialize new cache object
-        $this->cache = new \Shieldon\SimpleCache\Cache($cacheDriver, $cacheConfig);
+        # (2) Merge caching options with defaults
+        $cacheSettings = array_merge(['storage'   => './.cache'], $cacheSettings);
 
-        # (5) Build database when using SQLite for the first time
+        # (2) Create path to caching directory (if not existent) when required by cache driver
+        if (in_array($cacheDriver, ['file', 'sqlite']) === true) {
+            $this->createDir($cacheSettings['storage']);
+        }
+
+        # (4) Initialize new cache object
+        $this->cache = new \Shieldon\SimpleCache\Cache($cacheDriver, $cacheSettings);
+
+        # (5) Build database if using SQLite for the first time
         # TODO: Add check for MySQL, see https://github.com/terrylinooo/simple-cache/issues/8
         if ($cacheDriver == 'sqlite' && !file_exists(join([$cacheDir, 'cache.sqlite3']))) {
             $this->cache->rebuild();
@@ -177,84 +227,135 @@ class DejureOnline
      * Setters & getters
      */
 
-    public function setProvider(string $provider): void
-    {
-        $this->provider = $provider;
-    }
-
-    public function getProvider(): string
-    {
-        return $this->provider;
-    }
-
-    public function setMail(string $mail): void
-    {
-        $this->email = $mail;
-    }
-
-    public function getMail(): string
-    {
-        return $this->email;
-    }
-
-    public function setLinkStyle(string $linkStyle): void
-    {
-        $this->linkStyle = $linkStyle;
-    }
-
-    public function getLinkStyle(): string
-    {
-        return $this->linkStyle;
-    }
-
-    public function setTarget(string $target): void
-    {
-        $this->target = $target;
-    }
-
-    public function getTarget(): string
-    {
-        return $this->target;
-    }
-
-    public function setClass(string $class): void
-    {
-        $this->class = $class;
-    }
-
-    public function getClass(): string
-    {
-        return $this->class;
-    }
-
-    public function setBuzer(bool $buzer): void
-    {
-        $this->buzer = $buzer;
-    }
-
-    public function getBuzer(): string
-    {
-        return $this->buzer;
-    }
-
     public function setCacheDuration(int $cacheDuration): void
     {
         $this->cacheDuration = $cacheDuration;
     }
+
 
     public function getCacheDuration(): string
     {
         return $this->cacheDuration;
     }
 
+
+    public function setEmail(string $email): void
+    {
+        $this->email = $email;
+    }
+
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+
+    public function setBuzer(bool $buzer): void
+    {
+        $this->buzer = $buzer;
+    }
+
+
+    public function getBuzer(): string
+    {
+        return $this->buzer;
+    }
+
+
+    public function setClass(string $class): void
+    {
+        $this->class = $class;
+    }
+
+
+    public function getClass(): string
+    {
+        return $this->class;
+    }
+
+
+    public function setLineBreak(string $lineBreak): void
+    {
+        $this->lineBreak = $lineBreak;
+    }
+
+
+    public function getLineBreak(): string
+    {
+        return $this->lineBreak;
+    }
+
+
+    public function setLinkStyle(string $linkStyle): void
+    {
+        $this->linkStyle = $linkStyle;
+    }
+
+
+    public function getLinkStyle(): string
+    {
+        return $this->linkStyle;
+    }
+
+
+    public function setTarget(string $target): void
+    {
+        $this->target = $target;
+    }
+
+
+    public function getTarget(): string
+    {
+        return $this->target;
+    }
+
+
+    public function setTooltip(string $tooltip): void
+    {
+        $this->tooltip = $tooltip;
+    }
+
+
+    public function getTooltip(): string
+    {
+        return $this->tooltip;
+    }
+
+
+    public function setStreamTimeout(int $streamTimeout): void
+    {
+        $this->streamTimeout = $streamTimeout;
+    }
+
+
+    public function getStreamTimeout(): string
+    {
+        return $this->streamTimeout;
+    }
+
+
     public function setTimeout(int $timeout): void
     {
         $this->timeout = $timeout;
     }
 
+
     public function getTimeout(): string
     {
         return $this->timeout;
+    }
+
+
+    public function setUserAgent(string $userAgent): void
+    {
+        $this->userAgent = $userAgent;
+    }
+
+
+    public function getUserAgent(): string
+    {
+        return $this->userAgent;
     }
 
 
@@ -268,7 +369,7 @@ class DejureOnline
      * @param string $text Original (unprocessed) text
      * @return string Processed text if successful, otherwise unprocessed text
      */
-    public function dejurify(string $text = ''): string
+    public function dejurify(string $text = '', string $ignore = ''): string
     {
         # Return text as-is if no linkable citations are found
         if (!preg_match("/§|&sect;|Art\.|\/[0-9][0-9](?![0-9\/])| [0-9][0-9]?[\/\.][0-9][0-9](?![0-9\.])|[0-9][0-9], /", $text)) {
@@ -294,7 +395,7 @@ class DejureOnline
         }
 
         # .. otherwise, process text & cache it
-        return $this->connect($text);
+        return $this->connect($text, $ignore);
     }
 
 
@@ -308,103 +409,86 @@ class DejureOnline
      * @param string $text Original (unprocessed) text
      * @return string Processed text if successful, otherwise unprocessed text
      */
-    protected function connect(string $text): string
+    protected function connect(string $text, string $ignore): string
     {
         # Normalize input
-        # (1) Link style only supports two possible options
-        $linkStyle = in_array($this->linkStyle, ['weit', 'schmal']) === true
-            ? $this->linkStyle
-            : 'weit'
-        ;
+        # (1) Whether linking unknown legal norms to `buzer.de` or not needs to be an integer
+        $buzer = (int) $this->buzer;
 
-        # (2) Whether linking unknown legal norms to `buzer.de` or not needs to be an integer
-        $buzer = (int)$this->buzer;
+        # (2) Line break only supports three possible options
+        $lineBreak = in_array($this->lineBreak, ['ohne', 'mit', 'auto']) === true ? $this->lineBreak : 'auto';
 
-        # Note: Changing parameters requires manual cache reset!
-        $parameters = [
-            'Anbieterkennung' => $this->provider . '__' . $this->email,
+        # (2) Link style only supports two possible options
+        $linkStyle = in_array($this->linkStyle, ['weit', 'schmal']) === true ? $this->linkStyle : 'weit';
+
+        # (3) Tooltip only supports four possible options
+        $tooltip = in_array($this->tooltip, ['ohne', 'neutral', 'Gesetze', 'halb']) === true ? $this->tooltip : 'neutral';
+
+        # Note: Changing parameters requires a manual cache reset!
+        $query = [
+            'Originaltext'    => $text,
+            'Anbieterkennung' => $this->domain . '-' . $this->email,
             'format'          => $linkStyle,
+            'Tooltip'         => $tooltip,
+            'Zeilenwechsel'   => $lineBreak,
             'target'          => $this->target,
             'class'           => $this->class,
             'buzer'           => $buzer,
-            'version'         => 'php-' . self::DJO_VERSION,
+            'version'         => 'php-dejure@' . self::VERSION,
             'Schema'          => 'https',
         ];
 
-        # Build URL-encoded request string ..
-        # (1) .. from unprocessed text
-        $request = 'Originaltext=' . urlencode($text);
-
-        # (2) .. required parameters
-        foreach ($parameters as $key => $value) {
-            $request .= '&' . urlencode($key) . '=' . urlencode($value);
+        # Ignore file number (if provided)
+        if (!empty($ignore)) {
+            $query['AktenzeichenIgnorieren'] = $ignore;
         }
 
-        # (3) .. and prepare request header
-        $header = 'POST /dienste/vernetzung/vernetzen HTTP/1.0' . "\r\n";
-        $header .= 'User-Agent: ' . $this->provider . ' (PHP-Vernetzung ' . self::DJO_VERSION. ')' . "\r\n";
-        $header .= 'Content-type: application/x-www-form-urlencoded' . "\r\n";
-        $header .= 'Content-length: ' . strlen($request) . "\r\n";
-        $header .= 'Host: rechtsnetz.dejure.org' . "\r\n";
-        $header .= 'Connection: close' . "\r\n";
-        $header .= "\r\n";
+        $client = new \GuzzleHttp\Client([
+            'base_uri' => 'https://rechtsnetz.dejure.org',
+            'timeout'  => $this->timeout,
+        ]);
 
-        # Connect to API ..
-        # (1) .. over encrypted connection
-        if (extension_loaded('openssl')) {
-            $handle = fsockopen('tls://rechtsnetz.dejure.org', 443, $errorCode, $errorMessage, $this->timeout);
-        }
+        # Dezermine user agent for API connections
+        $userAgent = $this->userAgent ?? 'php-dejure v' . self::VERSION . ' @ ' . $this->domain;
 
-        # (2) .. alternatively, over unencrypted connection
-        if ($handle === false) {
-            $handle = fsockopen('rechtsnetz.dejure.org', 80, $errorCode, $errorMessage, $this->timeout);
-        }
+        # Try to ..
+        try {
+            # .. send text for processing, but return unprocessed text if ..
+            $response = $client->request('GET', '/dienste/vernetzung/vernetzen', [
+                'headers'      => ['User-Agent' => $userAgent, 'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8;'],
+                'query'        => $query,
+                'read_timeout' => $this->streamTimeout,
+                'stream'       => true,
+            ]);
 
-        # Return unprocessed text if connection ultimately fails ..
-        if ($handle === false) {
+        # (1) .. connection breaks down or timeout is reached
+        } catch (\GuzzleHttp\Exception\TransferException $e) {
             return $text;
         }
 
-        # .. otherwise, send text for processing (until reaching timeout)
-        stream_set_timeout($handle, $this->timeout, 0);
-        stream_set_blocking($handle, true);
-        fputs($handle, $header . $request);
-
-        $socketTimeout = false;
-        $socketEOF = false;
-        $response = '';
-
-        while (!$socketEOF && !$socketTimeout) {
-            $response .= fgets($handle, 1024);
-            $socketStatus = stream_get_meta_data($handle);
-            $socketEOF = $socketStatus['eof'];
-            $socketTimeout = $socketStatus['timed_out'];
-        }
-
-        fclose($handle);
-
-        # Handle problems with data transmission, returning unprocessed text if ..
-        # (1) .. timeout is reached or connection broke down
-        if (!preg_match("/^(.*?)\r?\n\r?\n\r?\n?(.*)/s", $response, $matches)) {
-            return $text;
-        }
-
-        # (2) .. status code indicates something other than successful transfer
-        if (strpos($matches[1], '200 OK') === false) {
+        # (2) .. status code indicates unsuccessful transfer
+        if ($response->getStatusCode() !== 200) {
             return $text;
         }
 
         # (3) .. otherwise, transmission *may* have worked
-        $response = $matches[2];
+        $body = $response->getBody();
 
-        # Check if processed text is shorter than unprocessed one, which indicates corrupted data
-        if (strlen($response) < strlen($text)) {
-            return $text;
+        # Get processed text
+        $result = '';
+
+        while (!$body->eof()) {
+            $result .= $body->read(1024);
         }
 
+        # Remove whitespaces from both ends of the string
+        $result = trim($result);
+
         # Verify data integrity by comparing original & modified text
-        # (1) Remove whitespaces from both ends of the string
-        $result = trim($response);
+        # (1) Check if processed text is shorter than unprocessed one, which indicates corrupted data
+        if (strlen($result) < strlen($text)) {
+            return $text;
+        }
 
         # (2) Check if processed text (minus `dejure.org` links) matches original (unprocessed) text ..
         if (preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $text) == preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $result)) {
