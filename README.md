@@ -38,10 +38,12 @@ You may change certain options from your `config.php` globally (`'kirby3-dejure.
 | `'email'`         | string | `''`        | Contact mail                      |
 | `'buzer'`         | bool   | `false`     | Fallback linking to 'buzer.de'    |
 | `'class'`         | string | `''`        | Controls `class` attribute        |
-| `'lineBreak'`     | string | `'auto'`    | Controls links across line breaks |
-| `'linkStyle'`     | string | `'weit'`    | Controls link range               |
+| `'lineBreak'`     | string | `'auto'`    | Controls links across line breaks. Possible values: `'ohne'`, `'mit'`, `'auto'` |
+| `'linkStyle'`     | string | `'weit'`    | Controls link range. Possible values: `'weit'`, `'schmal'` |
 | `'target'`        | string | `'_blank'`  | Controls `target` attribute       |
-| `'tooltip'`       | string | `'neutral'` | Controls `title` attribute        |
+| `'tooltip'`       | string | `'neutral'` | Controls `title` attribute. Possible values: `'ohne'`, `'neutral'`, `'Gesetze'`, `'halb'` |
+| '`driver`'        | string | `'file'`    | For all cache drivers, see [here](https://github.com/terrylinooo/simple-cache) |
+| '`caching`'       | array  | `[]`        | For all config options, see [here](https://github.com/terrylinooo/simple-cache) |
 | `'cacheDuration'` | int    | `2`         | Cache duration (days)             |
 | `'streamTimeout'` | int    | `10`        | Response stream timeout (seconds) |
 | `'timeout'`       | int    | `3`         | Request timeout (seconds)         |
