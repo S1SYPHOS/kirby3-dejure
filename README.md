@@ -31,23 +31,23 @@ composer require s1syphos/kirby3-dejure
 
 You may change certain options from your `config.php` globally (`'kirby3-dejure.optionName'`):
 
-| Option            | Type   | Default     | Description                       |
-| ----------------- | ------ | ----------- | --------------------------------- |
-| `'enabled'`       | bool   | `false`     | Enables / disables plugin         |
-| `'ignore'`        | string | `''`        | Global file number ignore         |
-| `'email'`         | string | `''`        | Contact mail                      |
-| `'buzer'`         | bool   | `false`     | Fallback linking to 'buzer.de'    |
-| `'class'`         | string | `''`        | Controls `class` attribute        |
-| `'lineBreak'`     | string | `'auto'`    | Controls links across line breaks. Possible values: `'ohne'`, `'mit'`, `'auto'` |
-| `'linkStyle'`     | string | `'weit'`    | Controls link range. Possible values: `'weit'`, `'schmal'` |
-| `'target'`        | string | `'_blank'`  | Controls `target` attribute       |
-| `'tooltip'`       | string | `'neutral'` | Controls `title` attribute. Possible values: `'ohne'`, `'neutral'`, `'Gesetze'`, `'halb'` |
-| '`driver`'        | string | `'file'`    | For all cache drivers, see [here](https://github.com/terrylinooo/simple-cache) |
-| '`caching`'       | array  | `[]`        | For all config options, see [here](https://github.com/terrylinooo/simple-cache) |
-| `'cacheDuration'` | int    | `2`         | Cache duration (days)             |
-| `'streamTimeout'` | int    | `10`        | Response stream timeout (seconds) |
-| `'timeout'`       | int    | `3`         | Request timeout (seconds)         |
-| `'userAgent'`     | string | `null`      | Controls `User-Agent` header      |
+| Option            | Type   | Default          | Description                       |
+| ----------------- | ------ | ---------------- | --------------------------------- |
+| `'enabled'`       | bool   | `false`          | Enables / disables plugin         |
+| `'ignore'`        | string | `''`             | Global file number ignore         |
+| `'email'`         | string | `''`             | Contact mail                      |
+| `'buzer'`         | bool   | `false`          | Fallback linking to 'buzer.de'    |
+| `'class'`         | string | `''`             | Controls `class` attribute        |
+| `'lineBreak'`     | string | `'auto'`         | Controls links across line breaks. Possible values: `'ohne'`, `'mit'`, `'auto'` |
+| `'linkStyle'`     | string | `'weit'`         | Controls link range. Possible values: `'weit'`, `'schmal'` |
+| `'target'`        | string | `'_blank'`       | Controls `target` attribute       |
+| `'tooltip'`       | string | `'beschreibend'` | Controls `title` attribute. Possible values: `'ohne'`, `'neutral'`, `'beschreibend'`, `'Gesetze'`, `'halb'` |
+| '`driver`'        | string | `'file'`         | For all cache drivers, see [here](https://github.com/terrylinooo/simple-cache) |
+| '`caching`'       | array  | `[]`             | For all config options, see [here](https://github.com/terrylinooo/simple-cache) |
+| `'cacheDuration'` | int    | `2`              | Cache duration (days)             |
+| `'streamTimeout'` | int    | `10`             | Response stream timeout (seconds) |
+| `'timeout'`       | int    | `3`              | Request timeout (seconds)         |
+| `'userAgent'`     | string | `null`           | Controls `User-Agent` header      |
 
 When enabling the plugin via `kirby3-dejure.enabled`, autolinking is applied to all `kirbytext()` / `kt()` calls. Besides that, there are additional methods you can use:
 

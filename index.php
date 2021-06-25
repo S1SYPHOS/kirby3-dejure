@@ -6,7 +6,7 @@
  * @package   Kirby CMS
  * @author    S1SYPHOS <hello@twobrain.io>
  * @link      http://twobrain.io
- * @version   1.2.1
+ * @version   1.2.2
  * @license   MIT
  */
 
@@ -60,7 +60,7 @@ function dejurify(string $text, string $ignore = null): string
     $object->setLineBreak(option('kirby3-dejure.lineBreak', 'auto'));
     $object->setLinkStyle(option('kirby3-dejure.linkStyle', 'weit'));
     $object->setTarget(option('kirby3-dejure.target', '_blank'));
-    $object->setTooltip(option('kirby3-dejure.tooltip', 'neutral'));
+    $object->setTooltip(option('kirby3-dejure.tooltip', 'beschreibend'));
 
     # (3) Connection
     $object->setStreamTimeout(option('kirby3-dejure.streamTimeout', 10));

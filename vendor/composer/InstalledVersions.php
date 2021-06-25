@@ -25,8 +25,8 @@ class InstalledVersions
     private static $installed = array (
   'root' => 
   array (
-    'pretty_version' => '1.2.0',
-    'version' => '1.2.0.0',
+    'pretty_version' => '1.2.2',
+    'version' => '1.2.2.0',
     'aliases' => 
     array (
     ),
@@ -227,8 +227,8 @@ class InstalledVersions
     ),
     's1syphos/kirby3-dejure' => 
     array (
-      'pretty_version' => '1.2.0',
-      'version' => '1.2.0.0',
+      'pretty_version' => '1.2.2',
+      'version' => '1.2.2.0',
       'aliases' => 
       array (
       ),
@@ -236,12 +236,12 @@ class InstalledVersions
     ),
     's1syphos/php-dejure' => 
     array (
-      'pretty_version' => '1.3.2',
-      'version' => '1.3.2.0',
+      'pretty_version' => '1.3.3',
+      'version' => '1.3.3.0',
       'aliases' => 
       array (
       ),
-      'reference' => 'e04f36332b4542b0c45dc18b46b2483ec961c233',
+      'reference' => '7288b50261a948f010aeae88362292b1235b1101',
     ),
     'shieldon/simple-cache' => 
     array (
