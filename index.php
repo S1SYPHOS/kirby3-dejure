@@ -52,7 +52,7 @@ function dejurify(string $text, string $ignore = null): string
 
     # Set defaults
     # (1) General information
-    $object->setEmail(option('kirby3-dejure.mail', ''));
+    $object->setEmail(option('kirby3-dejure.email', ''));
 
     # (2) Text processing
     $object->setBuzer(option('kirby3-dejure.buzer', false));
@@ -68,7 +68,7 @@ function dejurify(string $text, string $ignore = null): string
     $object->setUserAgent(option('kirby3-dejure.userAgent', 'kirby3-dejure @ ' . Kirby\Http\Server::host()));
 
     # (4) Caching
-    $object->setCacheDuration(option('kirby3-dejure.cachePeriod', 2));
+    $object->setCacheDuration(option('kirby3-dejure.cacheDuration', 2));
 
     # Fallback to global ignore
     if (!isset($ignore)) {
