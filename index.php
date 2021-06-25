@@ -15,6 +15,11 @@
 use S1SYPHOS\DejureOnline;
 
 
+/**
+ * Initializes new DejureOnline (DJO) instance
+ *
+ * @return \S1SYPHOS\DejureOnline
+ */
 function dejureInit(): \S1SYPHOS\DejureOnline
 {
     # Ensure that path to cache directory exists
@@ -28,6 +33,13 @@ function dejureInit(): \S1SYPHOS\DejureOnline
 }
 
 
+/**
+ * Processes linkable citations & caches text (if uncached or expired)
+ *
+ * @param string $text Original (unprocessed) text
+ * @param string $ignore Judicial file numbers to be ignored
+ * @return string Processed text if successful, otherwise unprocessed text
+ */
 function dejurify(string $text, string $ignore = ''): string
 {
     # Leave text unmodified if plugin is disabled (default)
@@ -62,13 +74,18 @@ function dejurify(string $text, string $ignore = ''): string
 }
 
 
-function clearDJO(): void
+/**
+ * Clears DJO cache
+ *
+ * @return bool Whether cache was cleared
+ */
+function clearDJO(): bool
 {
     # Create DJO instance
     $object = dejureInit();
 
     # Clear cache
-    $object->clearCache();
+    return $object->clearCache();
 }
 
 
