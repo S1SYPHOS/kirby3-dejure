@@ -94,13 +94,13 @@ Kirby::plugin('s1syphos/kirby3-dejure', [
         'kirbytext:after' => function (string $text): string
         {
             return dejurify($text, option('kirby3-dejure.ignore', ''));
-        }
+        },
     ],
     'pageMethods' => [
         'dejurify' => function (string $text, string $ignore = ''): string
         {
             return dejurify($text, $ignore);
-        }
+        },
     ],
     'fieldMethods' => [
         'dejurify' => function (Kirby\Cms\Field $field, string $ignore = '', bool $useKirbytext = true): string
@@ -110,6 +110,6 @@ Kirby::plugin('s1syphos/kirby3-dejure', [
             }
 
             return dejurify($field, $ignore);
-        }
+        },
     ],
 ]);
