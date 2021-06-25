@@ -55,7 +55,7 @@ function dejurify(string $text, string $ignore = ''): string
     $object->setEmail(option('kirby3-dejure.mail', ''));
 
     # (2) Text processing
-    $object->setBuzer(option('kirby3-dejure.buzer', true));
+    $object->setBuzer(option('kirby3-dejure.buzer', false));
     $object->setClass(option('kirby3-dejure.class', ''));
     $object->setLineBreak(option('kirby3-dejure.lineBreak', 'auto'));
     $object->setLinkStyle(option('kirby3-dejure.linkStyle', 'weit'));
