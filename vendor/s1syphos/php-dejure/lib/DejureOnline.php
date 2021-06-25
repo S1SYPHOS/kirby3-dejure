@@ -22,7 +22,7 @@ class DejureOnline
     /**
      * Current version
      */
-    const VERSION = '1.3.1';
+    const VERSION = '1.3.2';
 
 
     /**
@@ -367,6 +367,7 @@ class DejureOnline
      * Processes linkable citations & caches text (if uncached or expired)
      *
      * @param string $text Original (unprocessed) text
+     * @param string $ignore Judicial file numbers to be ignored
      * @return string Processed text if successful, otherwise unprocessed text
      */
     public function dejurify(string $text = '', string $ignore = ''): string
@@ -407,6 +408,7 @@ class DejureOnline
      * (4) Stores result in cache
      *
      * @param string $text Original (unprocessed) text
+     * @param string $ignore Judicial file numbers to be ignored
      * @return string Processed text if successful, otherwise unprocessed text
      */
     protected function connect(string $text, string $ignore): string
@@ -424,7 +426,8 @@ class DejureOnline
         # (3) Tooltip only supports four possible options
         $tooltip = in_array($this->tooltip, ['ohne', 'neutral', 'Gesetze', 'halb']) === true ? $this->tooltip : 'neutral';
 
-        # Note: Changing parameters requires a manual cache reset!
+        # Prepare query parameters
+        # Attention: Changing parameters requires a manual cache reset!
         $query = [
             'Originaltext'    => $text,
             'Anbieterkennung' => $this->domain . '-' . $this->email,
@@ -443,6 +446,7 @@ class DejureOnline
             $query['AktenzeichenIgnorieren'] = $ignore;
         }
 
+        # Initialize HTTP client
         $client = new \GuzzleHttp\Client([
             'base_uri' => 'https://rechtsnetz.dejure.org',
             'timeout'  => $this->timeout,
@@ -500,6 +504,20 @@ class DejureOnline
 
         # .. otherwise, return original (unprocessed) text
         return $text;
+    }
+
+
+    /**
+     * Clears cache
+     *
+     * @return bool Whether cache was cleared
+     */
+    public function clearCache(): bool
+    {
+        # Reset cache status
+        $this->fromCache = false;
+
+        return $this->cache->clear();
     }
 
 

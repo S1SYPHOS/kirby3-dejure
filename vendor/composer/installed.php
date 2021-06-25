@@ -1,8 +1,8 @@
 <?php return array (
   'root' => 
   array (
-    'pretty_version' => '1.1.0',
-    'version' => '1.1.0.0',
+    'pretty_version' => '1.2.0',
+    'version' => '1.2.0.0',
     'aliases' => 
     array (
     ),
@@ -203,8 +203,8 @@
     ),
     's1syphos/kirby3-dejure' => 
     array (
-      'pretty_version' => '1.1.0',
-      'version' => '1.1.0.0',
+      'pretty_version' => '1.2.0',
+      'version' => '1.2.0.0',
       'aliases' => 
       array (
       ),
@@ -212,12 +212,12 @@
     ),
     's1syphos/php-dejure' => 
     array (
-      'pretty_version' => '1.3.1',
-      'version' => '1.3.1.0',
+      'pretty_version' => '1.3.2',
+      'version' => '1.3.2.0',
       'aliases' => 
       array (
       ),
-      'reference' => '19fd6af1f5fb590631cf3bca4b8b7ca2b4bf7d69',
+      'reference' => 'e04f36332b4542b0c45dc18b46b2483ec961c233',
     ),
     'shieldon/simple-cache' => 
     array (
