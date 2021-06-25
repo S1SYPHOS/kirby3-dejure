@@ -15,6 +15,19 @@
 use S1SYPHOS\DejureOnline;
 
 
+function dejureInit(): \S1SYPHOS\DejureOnline
+{
+    # Ensure that path to cache directory exists
+    $cacheDir = kirby()->root('cache') . '/dejure-online.org/';
+
+    # Initialize DJO instance
+    return new DejureOnline(
+        option('kirby3-dejure.driver', 'file'),
+        option('kirby3-dejure.caching', ['storage' => $cacheDir])
+    );
+}
+
+
 function dejurify(string $text, string $ignore = ''): string
 {
     # Leave text unmodified if plugin is disabled (default)
@@ -22,17 +35,10 @@ function dejurify(string $text, string $ignore = ''): string
         return $text;
     }
 
-    # Ensure that path to cache directory exists
-    $cacheDir = kirby()->root('cache') . '/dejure-online.org/';
-
-    # Initialize DJO instance
-    $object = new DejureOnline(
-        option('kirby3-dejure.driver', 'file'),
-        option('kirby3-dejure.caching', ['storage' => $cacheDir])
-    );
+    # Create DJO instance
+    $object = dejureInit();
 
     # Set defaults
-
     # (1) General information
     $object->setEmail(option('kirby3-dejure.mail', ''));
 
@@ -53,6 +59,16 @@ function dejurify(string $text, string $ignore = ''): string
     $object->setCacheDuration(option('kirby3-dejure.cachePeriod', 2));
 
     return $object->dejurify($text, $ignore);
+}
+
+
+function clearDJO(): void
+{
+    # Create DJO instance
+    $object = dejureInit();
+
+    # Clear cache
+    $object->clearCache();
 }
 
 
