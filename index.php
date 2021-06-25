@@ -40,7 +40,7 @@ function dejureInit(): \S1SYPHOS\DejureOnline
  * @param string $ignore Judicial file numbers to be ignored
  * @return string Processed text if successful, otherwise unprocessed text
  */
-function dejurify(string $text, string $ignore = ''): string
+function dejurify(string $text, string $ignore = null): string
 {
     # Leave text unmodified if plugin is disabled (default)
     if (!option('kirby3-dejure.enabled', false)) {
@@ -70,6 +70,11 @@ function dejurify(string $text, string $ignore = ''): string
     # (4) Caching
     $object->setCacheDuration(option('kirby3-dejure.cachePeriod', 2));
 
+    # Fallback to global ignore
+    if (!isset($ignore)) {
+        $ignore = option('kirby3-dejure.ignore', '');
+    }
+
     return $object->dejurify($text, $ignore);
 }
 
@@ -93,7 +98,7 @@ Kirby::plugin('s1syphos/kirby3-dejure', [
     'hooks' => [
         'kirbytext:after' => function (string $text): string
         {
-            return dejurify($text, option('kirby3-dejure.ignore', ''));
+            return dejurify($text);
         },
     ],
     'pageMethods' => [
