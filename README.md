@@ -34,6 +34,8 @@ You may change certain options from your `config.php` globally (`'kirby3-dejure.
 | Option            | Type   | Default          | Description                       |
 | ----------------- | ------ | ---------------- | --------------------------------- |
 | `'enabled'`       | bool   | `false`          | Enables `kirbytext:after` hook    |
+| `'allowList'`     | array  | `[]`             | Allowed template names            |
+| `'blockList'`     | array  | `[]`             | Blocked template names            |
 | `'ignore'`        | string | `''`             | Global file number ignore         |
 | `'email'`         | string | `''`             | Contact mail                      |
 | `'buzer'`         | bool   | `false`          | Fallback linking to 'buzer.de'    |
@@ -49,7 +51,12 @@ You may change certain options from your `config.php` globally (`'kirby3-dejure.
 | `'timeout'`       | int    | `3`              | Request timeout (seconds)         |
 | `'userAgent'`     | string | `null`           | Controls `User-Agent` header      |
 
-When enabling the plugin via `kirby3-dejure.enabled`, autolinking is applied to all `kirbytext()` / `kt()` calls. Besides that, there are additional methods you can use:
+When enabling the plugin via `kirby3-dejure.enabled`, auto-linking is applied to all `kirbytext()` / `kt()` calls, with two exceptions:
+
+1. If a page's `intendedTemplate()` name is allow(list)ed, this overrides `kirby3-dejure.enabled` being `false`
+1. If a page's `intendedTemplate()` name is block(list)ed, this overrides `kirby3-dejure.enabled` being `true`
+
+Besides that, there are additional methods you can use:
 
 ## Methods
 

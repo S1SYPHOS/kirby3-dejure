@@ -6,7 +6,7 @@
  * @package   Kirby CMS
  * @author    S1SYPHOS <hello@twobrain.io>
  * @link      http://twobrain.io
- * @version   1.2.3
+ * @version   1.3.0
  * @license   MIT
  */
 
@@ -93,8 +93,19 @@ Kirby::plugin('s1syphos/kirby3-dejure', [
     'hooks' => [
         'kirbytext:after' => function (string $text): string
         {
-            # Leave text unmodified if plugin is disabled (default)
+            # Process text by all means when page template is allowlisted
+            if (in_array(page()->intendedTemplate(), option('kirby3-dejure.allowList', [])) === true) {
+                return dejurify($text);
+            }
+
+            # Leave text unmodified if ..
+            # (1) .. plugin is disabled (default)
             if (!option('kirby3-dejure.enabled', false)) {
+                return $text;
+            }
+
+            # (2) .. page template is blocklisted
+            if (in_array(page()->intendedTemplate(), option('kirby3-dejure.blockList', [])) === true) {
                 return $text;
             }
 
