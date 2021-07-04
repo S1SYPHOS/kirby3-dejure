@@ -6,7 +6,7 @@
  * @package   Kirby CMS
  * @author    S1SYPHOS <hello@twobrain.io>
  * @link      http://twobrain.io
- * @version   1.2.2
+ * @version   1.2.3
  * @license   MIT
  */
 
@@ -42,11 +42,6 @@ function dejureInit(): \S1SYPHOS\DejureOnline
  */
 function dejurify(string $text, string $ignore = null): string
 {
-    # Leave text unmodified if plugin is disabled (default)
-    if (!option('kirby3-dejure.enabled', false)) {
-        return $text;
-    }
-
     # Create DJO instance
     $object = dejureInit();
 
@@ -98,6 +93,11 @@ Kirby::plugin('s1syphos/kirby3-dejure', [
     'hooks' => [
         'kirbytext:after' => function (string $text): string
         {
+            # Leave text unmodified if plugin is disabled (default)
+            if (!option('kirby3-dejure.enabled', false)) {
+                return $text;
+            }
+
             return dejurify($text);
         },
     ],

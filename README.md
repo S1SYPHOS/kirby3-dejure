@@ -33,7 +33,7 @@ You may change certain options from your `config.php` globally (`'kirby3-dejure.
 
 | Option            | Type   | Default          | Description                       |
 | ----------------- | ------ | ---------------- | --------------------------------- |
-| `'enabled'`       | bool   | `false`          | Enables / disables plugin         |
+| `'enabled'`       | bool   | `false`          | Enables `kirbytext:after` hook    |
 | `'ignore'`        | string | `''`             | Global file number ignore         |
 | `'email'`         | string | `''`             | Contact mail                      |
 | `'buzer'`         | bool   | `false`          | Fallback linking to 'buzer.de'    |
