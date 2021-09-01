@@ -3,8 +3,8 @@
 /**
  * php-dejure - Linking texts with dejure.org, the Class(y) way.
  *
- * @link https:#github.com/S1SYPHOS/php-dejure
- * @license https:#opensource.org/licenses/MIT MIT
+ * @link https://github.com/S1SYPHOS/php-dejure
+ * @license https://opensource.org/licenses/MIT MIT
  */
 
 namespace S1SYPHOS;
@@ -22,7 +22,7 @@ class DejureOnline
     /**
      * Current version
      */
-    const VERSION = '1.3.3';
+    const VERSION = '1.4.0';
 
 
     /**
@@ -223,7 +223,7 @@ class DejureOnline
 
         # (5) Build database if using SQLite for the first time
         # TODO: Add check for MySQL, see https://github.com/terrylinooo/simple-cache/issues/8
-        if ($cacheDriver == 'sqlite' && !file_exists(join([$cacheDir, 'cache.sqlite3']))) {
+        if ($cacheDriver === 'sqlite' && !file_exists(join([$cacheSettings['storage'], 'cache.sqlite3']))) {
             $this->cache->rebuild();
         }
     }
@@ -379,15 +379,12 @@ class DejureOnline
     public function dejurify(string $text = '', string $ignore = ''): string
     {
         # Return text as-is if no linkable citations are found
-        if (!preg_match("/§|&sect;|Art\.|\/[0-9][0-9](?![0-9\/])| [0-9][0-9]?[\/\.][0-9][0-9](?![0-9\.])|[0-9][0-9], /", $text)) {
+        if (!preg_match("((?:§|&sect;|Art\.)\s*[0-9]+\s*[a-z]?\s\w+)", $text)) {
             return $text;
         }
 
         # Remove whitespaces from both ends of the string
         $text = trim($text);
-
-        # Check if text was processed & cached before ..
-        $result = false;
 
         # Build unique caching key
         $hash = $this->text2hash($text);
@@ -445,12 +442,11 @@ class DejureOnline
             'timeout'  => $this->timeout,
         ]);
 
-        # Dezermine user agent for API connections
+        # Determine user agent for API connections
         $userAgent = $this->userAgent ?? 'php-dejure v' . self::VERSION . ' @ ' . $this->domain;
 
-        # Try to ..
+        # Try to send text for processing, but return unprocessed text if ..
         try {
-            # .. send text for processing, but return unprocessed text if ..
             $response = $client->request('GET', '/dienste/vernetzung/vernetzen', [
                 'headers'      => ['User-Agent' => $userAgent, 'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8;'],
                 'query'        => $query,
@@ -458,7 +454,7 @@ class DejureOnline
                 'stream'       => true,
             ]);
 
-            # (1) .. connection breaks down or timeout is reached
+        # (1) .. connection breaks down or timeout is reached
         } catch (\GuzzleHttp\Exception\TransferException $e) {
             return $text;
         }
@@ -571,7 +567,7 @@ class DejureOnline
         }
 
         if (is_writable($parent) === false) {
-            throw new Exception(sprintf('The directory "%s" cannot be created', $dir));
+            throw new \Exception(sprintf('The directory "%s" cannot be created', $dir));
         }
 
         return mkdir($dir);
