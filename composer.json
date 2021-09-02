@@ -3,7 +3,7 @@
     "description": "Auto-linking legal norms to dejure.org for Kirby v3",
     "type": "kirby-plugin",
     "license": "MIT",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "keywords": ["getkirby", "kirby", "kirby3", "kirby-plugin", "api", "legal", "dejure", "dejure.org"],
     "scripts": {
         "cs-dry": "php-cs-fixer fix --dry-run --diff",
@@ -19,7 +19,7 @@
     ],
     "require": {
         "getkirby/composer-installer": "^1.1",
-        "s1syphos/php-dejure": "1.4.0"
+        "s1syphos/php-dejure": "^1.4.0"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.14"
