@@ -5,6 +5,7 @@
  *
  * @link https://github.com/S1SYPHOS/php-dejure
  * @license https://opensource.org/licenses/MIT MIT
+ * @version 1.5.1
  */
 
 namespace S1SYPHOS;
@@ -20,14 +21,22 @@ namespace S1SYPHOS;
 class DejureOnline
 {
     /**
-     * Current version
+     * Package version
+     *
+     * @var string
      */
-    const VERSION = '1.4.0';
+    private $version = '1.5.1';
 
 
     /**
      * General information
      */
+
+    /**
+     * API base URL
+     */
+    private $baseUrl = 'https://rechtsnetz.dejure.org';
+
 
     /**
      * Defines provider domain
@@ -137,7 +146,7 @@ class DejureOnline
      *
      * @var string
      */
-    protected $userAgent = null;
+    protected $userAgent;
 
 
     /**
@@ -194,15 +203,27 @@ class DejureOnline
      *
      * @param string $cacheDriver
      * @param array $cacheSettings
+     *
      * @return void
+     * @throws \Exception
      */
-    public function __construct(string $cacheDriver = 'file', array $cacheSettings = []) {
-        # Provide sensible defaults, like ..
-        # (1) .. current domain
-        $this->domain = $_SERVER['HTTP_HOST'];
+    public function __construct(string $cacheDriver = 'file', array $cacheSettings = [])
+    {
+        # Set default user agent
+        $this->userAgent = 'php-dejure v' . $this->version;
 
-        # (2) .. contact email
-        $this->email = 'webmaster@' . $_SERVER['HTTP_HOST'];
+        # When not in CLI mode or other edge cases ..
+        if (isset($_SERVER['HTTP_HOST'])) {
+            # .. provide sensible defaults, like ..
+            # (1) .. current domain
+            $this->domain = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+            # (2) .. contact email
+            $this->email = 'webmaster@' . $this->domain;
+
+            # (3) .. extend user agent
+            $this->userAgent .= ' @ ' . $this->domain;
+        }
 
         # Initialize cache
         # (1) Validate provided cache driver
@@ -213,7 +234,7 @@ class DejureOnline
         # (2) Merge caching options with defaults
         $cacheSettings = array_merge(['storage'   => './.cache'], $cacheSettings);
 
-        # (2) Create path to caching directory (if not existent) when required by cache driver
+        # (3) Create path to caching directory (if not existent) when required by cache driver
         if (in_array($cacheDriver, ['file', 'sqlite']) === true) {
             $this->createDir($cacheSettings['storage']);
         }
@@ -239,9 +260,21 @@ class DejureOnline
     }
 
 
-    public function getCacheDuration(): string
+    public function getCacheDuration(): int
     {
         return $this->cacheDuration;
+    }
+
+
+    public function setDomain(string $domain): void
+    {
+        $this->domain = $domain;
+    }
+
+
+    public function getDomain(): string
+    {
+        return $this->domain;
     }
 
 
@@ -263,7 +296,7 @@ class DejureOnline
     }
 
 
-    public function getBuzer(): string
+    public function getBuzer(): bool
     {
         return $this->buzer;
     }
@@ -335,7 +368,7 @@ class DejureOnline
     }
 
 
-    public function getStreamTimeout(): string
+    public function getStreamTimeout(): int
     {
         return $this->streamTimeout;
     }
@@ -374,7 +407,9 @@ class DejureOnline
      *
      * @param string $text Original (unprocessed) text
      * @param string $ignore Judicial file numbers to be ignored
+     *
      * @return string Processed text if successful, otherwise unprocessed text
+     * @throws \Exception
      */
     public function dejurify(string $text = '', string $ignore = ''): string
     {
@@ -386,8 +421,20 @@ class DejureOnline
         # Remove whitespaces from both ends of the string
         $text = trim($text);
 
+        # Reset cache query success
+        $this->fromCache = false;
+
+        # Attempt to ..
+        try {
+            # .. prepare query parameters for API call
+            $query = $this->createQuery($text, $ignore);
+
+        } catch (\Exception $e) {
+            throw $e;
+        }
+
         # Build unique caching key
-        $hash = $this->text2hash($text);
+        $hash = $this->query2hash($query);
 
         # If cache file exists & its content is valid (= not expired) ..
         if ($this->cache->has($hash) === true) {
@@ -398,60 +445,22 @@ class DejureOnline
             return $this->cache->get($hash);
         }
 
-        # .. otherwise, process text & cache it
-        return $this->connect($text, $ignore);
-    }
-
-
-    /**
-     * Processes text by connecting to API:
-     * (1) Sends unprocessed text
-     * (2) Receives processed text
-     * (3) Checks data integrity
-     * (4) Stores result in cache
-     *
-     * @param string $text Original (unprocessed) text
-     * @param string $ignore Judicial file numbers to be ignored
-     * @return string Processed text if successful, otherwise unprocessed text
-     */
-    protected function connect(string $text, string $ignore): string
-    {
-        # Prepare query parameters
-        # Attention: Changing parameters requires a manual cache reset!
-        $query = [
-            'Originaltext'           => $text,
-            'AktenzeichenIgnorieren' => '',
-            'Anbieterkennung'        => $this->domain . '-' . $this->email,
-            'format'                 => $this->linkStyle,
-            'Tooltip'                => $this->tooltip,
-            'Zeilenwechsel'          => $this->lineBreak,
-            'target'                 => $this->target,
-            'class'                  => $this->class,
-            'buzer'                  => $this->buzer,
-            'version'                => 'php-dejure@' . self::VERSION,
-        ];
-
-        # Ignore file number (if provided)
-        if (!empty($ignore)) {
-            $query['AktenzeichenIgnorieren'] = $ignore;
-        }
-
         # Initialize HTTP client
         $client = new \GuzzleHttp\Client([
-            'base_uri' => 'https://rechtsnetz.dejure.org',
+            'base_uri' => $this->baseUrl,
             'timeout'  => $this->timeout,
         ]);
-
-        # Determine user agent for API connections
-        $userAgent = $this->userAgent ?? 'php-dejure v' . self::VERSION . ' @ ' . $this->domain;
 
         # Try to send text for processing, but return unprocessed text if ..
         try {
             $response = $client->request('GET', '/dienste/vernetzung/vernetzen', [
-                'headers'      => ['User-Agent' => $userAgent, 'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8;'],
                 'query'        => $query,
-                'read_timeout' => $this->streamTimeout,
                 'stream'       => true,
+                'read_timeout' => $this->streamTimeout,
+                'headers'      => [
+                    'User-Agent' => $this->userAgent,
+                    'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8;'
+                ],
             ]);
 
         # (1) .. connection breaks down or timeout is reached
@@ -486,7 +495,7 @@ class DejureOnline
         # (2) Check if processed text (minus `dejure.org` links) matches original (unprocessed) text ..
         if (preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $text) == preg_replace("/<a href=\"https?:\/\/dejure.org\/[^>]*>([^<]*)<\/a>/i", "\\1", $result)) {
             # Build unique caching key & store result in cache
-            $this->cache->set($this->text2hash($text), $result, $this->days2seconds($this->cacheDuration));
+            $this->cache->set($hash, $result, $this->days2seconds($this->cacheDuration));
 
             return $result;
         }
@@ -515,26 +524,72 @@ class DejureOnline
      */
 
     /**
+     * Builds query parameters
+     *
+     * Attention: Changing parameters requires a manual cache reset!
+     *
+     * @param string $text Original (unprocessed) text
+     * @param string $ignore Judicial file numbers to be ignored
+     *
+     * @return array
+     * @throws \Exception
+     */
+    protected function createQuery(string $text, string $ignore): array
+    {
+        # Fail early for invalid API parameters
+        # (1) Link style
+        if (in_array($this->linkStyle, ['weit', 'schmal']) === false) {
+            throw new \Exception(sprintf('Invalid link style: "%s"', $this->linkStyle));
+        }
+
+        # (2) Tooltip
+        if (in_array($this->tooltip, ['ohne', 'neutral', 'beschreibend', 'Gesetze', 'halb']) === false) {
+            throw new \Exception(sprintf('Invalid tooltip: "%s"', $this->tooltip));
+        }
+
+        # (3) Line break
+        if (in_array($this->lineBreak, ['ohne', 'mit', 'auto']) === false) {
+            throw new \Exception(sprintf('Invalid tooltip: "%s"', $this->tooltip));
+        }
+
+        return [
+            'Originaltext'           => $text,
+            'AktenzeichenIgnorieren' => $ignore,
+            'Anbieterkennung'        => $this->domain . '-' . $this->email,
+            'format'                 => $this->linkStyle,
+            'Tooltip'                => $this->tooltip,
+            'Zeilenwechsel'          => $this->lineBreak,
+            'target'                 => $this->target,
+            'class'                  => $this->class,
+            'buzer'                  => $this->buzer,
+            'version'                => 'php-dejure@' . $this->version,
+        ];
+    }
+
+
+    /**
+     * Builds hash from text length & query parameters
+     *
+     * @param array $query Query parameters (including content)
+     *
+     * @return string
+     */
+    protected function query2hash(array $query): string
+    {
+        return strlen($query['Originaltext']) . md5(json_encode($query));
+    }
+
+
+    /**
      * Converts days to seconds
      *
      * @param int $days
+     *
      * @return int
      */
     protected function days2seconds(int $days): int
     {
         return $days * 24 * 60 * 60;
-    }
-
-
-    /**
-     * Builds hash from text length & content
-     *
-     * @param string $text
-     * @return string
-     */
-    protected function text2hash(string $text): string
-    {
-        return strlen($text) . md5($text);
     }
 
 
@@ -546,6 +601,7 @@ class DejureOnline
      *
      * @param string $dir The path for the new directory
      * @param bool $recursive Create all parent directories, which don't exist
+     *
      * @return bool True: the dir has been created, false: creating failed
      */
     protected function createDir(string $dir, bool $recursive = true): bool
