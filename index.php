@@ -6,7 +6,7 @@
  * @package   Kirby CMS
  * @author    S1SYPHOS <hello@twobrain.io>
  * @link      http://twobrain.io
- * @version   1.4.3
+ * @version   1.4.4
  * @license   MIT
  */
 
@@ -40,7 +40,7 @@ function dejureInit(): \S1SYPHOS\DejureOnline
  * @param string $ignore Judicial file numbers to be ignored
  * @return string Processed text if successful, otherwise unprocessed text
  */
-function dejurify(string $text, string $ignore = null): string
+function dejurify(string $text, string $ignore = ''): string
 {
     # Create DJO instance
     $object = dejureInit();
@@ -66,7 +66,7 @@ function dejurify(string $text, string $ignore = null): string
     $object->setCacheDuration(option('kirby3-dejure.cacheDuration', 2));
 
     # Fallback to global ignore
-    if (!isset($ignore)) {
+    if (empty($ignore)) {
         $ignore = option('kirby3-dejure.ignore', '');
     }
 

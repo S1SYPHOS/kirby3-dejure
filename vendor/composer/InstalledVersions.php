@@ -25,8 +25,8 @@ class InstalledVersions
     private static $installed = array (
   'root' => 
   array (
-    'pretty_version' => '1.4.3',
-    'version' => '1.4.3.0',
+    'pretty_version' => '1.4.4',
+    'version' => '1.4.4.0',
     'aliases' => 
     array (
     ),
@@ -243,8 +243,8 @@ class InstalledVersions
     ),
     's1syphos/kirby3-dejure' => 
     array (
-      'pretty_version' => '1.4.3',
-      'version' => '1.4.3.0',
+      'pretty_version' => '1.4.4',
+      'version' => '1.4.4.0',
       'aliases' => 
       array (
       ),
